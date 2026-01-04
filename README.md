@@ -3,7 +3,7 @@
 Find G-quadruplex motifs in sequencing reads. Input is expected to be a fastq (optionally can be gzipped). Output is a bed file with the columns sequence_id, start, end, G4, length. Default output is to stdout. 
 
 
-The sequences are found via a regular expression explained in  [https://doi.org/10.1093/nar/gki609]
+The sequences are found via a regular expression explained in  https://doi.org/10.1093/nar/gki609
 
 ### Usage
 ```shell
