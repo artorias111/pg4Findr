@@ -14,7 +14,7 @@ struct Args {
 fn main() {
     let args = Args::parse();
     let path = &args.reads;
-    println!("Searching for G-quadruplex sequence motifs in your file");
+    eprintln!("Searching for G-quadruplex sequence motifs in your file");
 
     let pattern = r"(?i)G{3,}[ATCGN]{1,7}G{3,}[ATCGN]{1,7}G{3,}[ATCGN]{1,7}G{3,}";
     let re = Regex::new(pattern).unwrap();
