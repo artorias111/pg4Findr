@@ -12,6 +12,3 @@ The sequences are found via a regular expression explained in  https://doi.org/1
 # quick run with cargo
 cargo run -- --reads /path/to/reads.fastq(.gz) > g4_motifs.bed
 ```
-```
-```
-```
