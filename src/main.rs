@@ -3,19 +3,26 @@ use std::fs::File;
 use std::io::{self, BufRead, BufReader};
 use std::path::Path;
 use flate2::read::MultiGzDecoder;
+use clap::Parser;
+
+#[derive(Parser, Debug)]
+struct Args {
+    #[arg(short, long)]
+    reads: String,
+}
 
 fn main() {
-    println!("Hello, world!");
+    let args = Args::parse();
+    let path = &args.reads;
+    println!("Searching for G-quadruplex sequence motifs in your file");
 
     let pattern = r"(?i)G{3,}[ATCGN]{1,7}G{3,}[ATCGN]{1,7}G{3,}[ATCGN]{1,7}G{3,}";
     let re = Regex::new(pattern).unwrap();
+
+    let _ = stream_fastq(path, &re);
 }
 
-
-// read a fastq file
-//
-
-fn stream_fastq(filepath: &str, threshold: f32, re: &Regex) -> io::Result<()> {
+fn stream_fastq(filepath: &str, re: &Regex) -> io::Result<()> {
     let is_gzipped:i32;
     let filepath = Path::new(filepath);
 
@@ -64,11 +71,12 @@ fn stream_fastq(filepath: &str, threshold: f32, re: &Regex) -> io::Result<()> {
 }
 
 
-
-
-
 fn find_pg(seq: &str, re: &Regex, header: &str) {
-    let chrom = header.trim_start_matches('@').split_whitespace().next().unwrap_or("unknown");
+    let chrom = header
+        .trim_start_matches('@')
+        .split_whitespace()
+        .next()
+        .unwrap_or("unknown");
     
     for mat in re.find_iter(seq) {
         let start = mat.start() as i32;
