@@ -14,15 +14,17 @@ struct Args {
 fn main() {
     let args = Args::parse();
     let path = &args.reads;
-    println!("Searching for G-quadruplex sequence motifs in your file");
+    eprintln!("Searching for G-quadruplex sequence motifs in your file");
 
-    let pattern = r"(?i)G{3,}[ATCGN]{1,7}G{3,}[ATCGN]{1,7}G{3,}[ATCGN]{1,7}G{3,}";
-    let re = Regex::new(pattern).unwrap();
+    let forward_pattern = r"(?i)G{3,}[ATCGN]{1,7}G{3,}[ATCGN]{1,7}G{3,}[ATCGN]{1,7}G{3,}";
+    let reverse_pattern = r"(?i)C{3,}[ATCGN]{1,7}C{3,}[ATCGN]{1,7}C{3,}[ATCGN]{1,7}C{3,}";
+    let g_pat = Regex::new(forward_pattern).unwrap();
+    let c_pat = Regex::new(reverse_pattern).unwrap();
 
-    let _ = stream_fastq(path, &re);
+    let _ = stream_fastq(path, &g_pat, &c_pat);
 }
 
-fn stream_fastq(filepath: &str, re: &Regex) -> io::Result<()> {
+fn stream_fastq(filepath: &str, g_re: &Regex, c_re: &Regex) -> io::Result<()> {
     let is_gzipped:i32;
     let filepath = Path::new(filepath);
 
@@ -45,33 +47,22 @@ fn stream_fastq(filepath: &str, re: &Regex) -> io::Result<()> {
         Box::new(BufReader::new(file))
     };
 
-
-    let mut is_header_assigned = 0;
-    let mut header = String::new();
-
-    for line in reader.lines() {
-        let fastq_line = match line {
-            Err(_) => panic!("Empty fastq file, please try again"),
-            Ok(file) => file,
-        };
-        if fastq_line.starts_with('@') {
-            header = fastq_line;
-            is_header_assigned = 1;
-            continue;
+    let mut lines = reader.lines();
+    while let Some(Ok(h_line)) = lines.next() {
+        let header = h_line; // Line 1: Header
+        if let Some(Ok(seq_line)) = lines.next() {
+            find_pg(&seq_line, &g_re, &header, "+");
+            find_pg(&seq_line, &c_re, &header, "-");
         }
-
-        if is_header_assigned == 1 {
-            find_pg(&fastq_line, &re, &header);
-            is_header_assigned = 0;
-        }
-
+        let _ = lines.next();
+        let _ = lines.next();
     }
 
     Ok(())
 }
 
 
-fn find_pg(seq: &str, re: &Regex, header: &str) {
+fn find_pg(seq: &str, re: &Regex, header: &str, strand: &str) {
     let chrom = header
         .trim_start_matches('@')
         .split_whitespace()
@@ -82,6 +73,6 @@ fn find_pg(seq: &str, re: &Regex, header: &str) {
         let start = mat.start() as i32;
         let end = mat.end() as i32;
         let length = end - start;
-        println!("{}\t{}\t{}\t{}\t{}", chrom, start, end, "G4", length);
+        println!("{}\t{}\t{}\t{}\t{}\t{}", chrom, start, end, "G4", length, strand);
     }
 }
