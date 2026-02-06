@@ -3,7 +3,7 @@
 Find G-quadruplex motifs in sequencing reads/genome assemblies. Input is expected to be a fastq (optionally can be gzipped) or a fasta (if you're working with a genome assembly). Output is a bed file with the columns sequence_id, start, end, G4, length, strand. Default output is to stdout. See https://github.com/samtools/hts-specs/blob/master/BEDv1.pdf for more information on the BED file format.
 
 
-The sequences are found via a regular expression explained in  https://doi.org/10.1093/nar/gki609 with Rust Regex's `find_iter()` (https://docs.rs/regex/latest/regex/struct.Regex.html#method.find_iter). 
+The sequences are found via a regular expression explained in  https://doi.org/10.1093/nar/gki609 with Rust Regex's `find_iter()` (https://docs.rs/regex/latest/regex/struct.Regex.html#method.find_iter) to avoid overlaps and repeating counts. 
 
 ### Usage
 ```shell
