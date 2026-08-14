@@ -1,22 +1,24 @@
+// main.rs
+mod cli;
+
+use clap::Parser;
+use flate2::read::MultiGzDecoder;
 use regex::Regex;
 use std::fs::File;
 use std::io::{self, BufRead, BufReader};
 use std::path::Path;
-use flate2::read::MultiGzDecoder;
-use clap::Parser;
 
-#[derive(Parser, Debug)]
-#[command(version)]
-struct Args {
-    #[arg(short, long, num_args = 1..)]
-    reads: Vec<String>,
-}
+use cli::Args;
 
 fn main() {
     let args = Args::parse();
 
-    let g_pat = Regex::new(r"(?i)G{3,}[ATCGN]{1,7}G{3,}[ATCGN]{1,7}G{3,}[ATCGN]{1,7}G{3,}").unwrap();
-    let c_pat = Regex::new(r"(?i)C{3,}[ATCGN]{1,7}C{3,}[ATCGN]{1,7}C{3,}[ATCGN]{1,7}C{3,}").unwrap();
+    let g_pat =
+        Regex::new(r"(?i)G{3,}[ATCGN]{1,7}G{3,}[ATCGN]{1,7}G{3,}[ATCGN]{1,7}G{3,}").unwrap();
+
+    // Reverse complemented regex
+    let c_pat =
+        Regex::new(r"(?i)C{3,}[ATCGN]{1,7}C{3,}[ATCGN]{1,7}C{3,}[ATCGN]{1,7}C{3,}").unwrap();
 
     for file_path in &args.reads {
         if let Err(e) = stream_records(file_path, &g_pat, &c_pat) {
@@ -27,7 +29,9 @@ fn main() {
 
 fn stream_records(filepath: &str, g_re: &Regex, c_re: &Regex) -> io::Result<()> {
     let path = Path::new(filepath);
-    let is_gzipped = path.extension().map_or(false, |ext| ext.eq_ignore_ascii_case("gz"));
+    let is_gzipped = path
+        .extension()
+        .map_or(false, |ext| ext.eq_ignore_ascii_case("gz"));
     let file = File::open(path)?;
 
     let reader: Box<dyn BufRead> = if is_gzipped {
@@ -43,7 +47,9 @@ fn stream_records(filepath: &str, g_re: &Regex, c_re: &Regex) -> io::Result<()> 
 
     for line in reader.lines() {
         let line = line?;
-        if line.is_empty() { continue; }
+        if line.is_empty() {
+            continue;
+        }
 
         if line.starts_with('>') {
             if !seq_acc.is_empty() {
@@ -92,6 +98,9 @@ fn find_pg(seq: &str, re: &Regex, header: &str, strand: &str) {
         let start = mat.start();
         let end = mat.end();
         let length = end - start;
-        println!("{}\t{}\t{}\t{}\t{}\t{}", chrom, start, end, "G4", length, strand);
+        println!(
+            "{}\t{}\t{}\t{}\t{}\t{}",
+            chrom, start, end, "G4", length, strand
+        );
     }
 }
