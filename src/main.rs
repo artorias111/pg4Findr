@@ -1,37 +1,36 @@
 // main.rs
 mod cli;
+mod g4;
 
 use clap::Parser;
 use flate2::read::MultiGzDecoder;
-use regex::Regex;
 use std::fs::File;
 use std::io::{self, BufRead, BufReader};
 use std::path::Path;
+// use std::str::pattern::Pattern;
 
 use cli::Args;
+use g4::{Patterns, find_in_record};
 
 fn main() {
     let args = Args::parse();
 
-    let g_pat =
-        Regex::new(r"(?i)G{3,}[ATCGN]{1,7}G{3,}[ATCGN]{1,7}G{3,}[ATCGN]{1,7}G{3,}").unwrap();
-
-    // Reverse complemented regex
-    let c_pat =
-        Regex::new(r"(?i)C{3,}[ATCGN]{1,7}C{3,}[ATCGN]{1,7}C{3,}[ATCGN]{1,7}C{3,}").unwrap();
+    let pats = Patterns::new();
 
     for file_path in &args.reads {
-        if let Err(e) = stream_records(file_path, &g_pat, &c_pat) {
+        if let Err(e) = stream_records(file_path, &pats) {
             eprintln!("Error processing {}: {}", file_path, e);
         }
     }
 }
 
-fn stream_records(filepath: &str, g_re: &Regex, c_re: &Regex) -> io::Result<()> {
+fn stream_records(filepath: &str, pats: &Patterns) -> io::Result<()> {
     let path = Path::new(filepath);
+
     let is_gzipped = path
         .extension()
-        .map_or(false, |ext| ext.eq_ignore_ascii_case("gz"));
+        .is_some_and(|ext| ext.eq_ignore_ascii_case("gz"));
+
     let file = File::open(path)?;
 
     let reader: Box<dyn BufRead> = if is_gzipped {
@@ -53,8 +52,7 @@ fn stream_records(filepath: &str, g_re: &Regex, c_re: &Regex) -> io::Result<()> 
 
         if line.starts_with('>') {
             if !seq_acc.is_empty() {
-                find_pg(&seq_acc, g_re, &header, "+");
-                find_pg(&seq_acc, c_re, &header, "-");
+                emit(&seq_acc, &header, pats);
                 seq_acc.clear();
             }
             header = line;
@@ -66,8 +64,7 @@ fn stream_records(filepath: &str, g_re: &Regex, c_re: &Regex) -> io::Result<()> 
         } else if is_fastq {
             match fq_step {
                 1 => {
-                    find_pg(&line, g_re, &header, "+");
-                    find_pg(&line, c_re, &header, "-");
+                    emit(&line, &header, pats);
                     fq_step = 2;
                 }
                 2 => fq_step = 3,
@@ -80,27 +77,28 @@ fn stream_records(filepath: &str, g_re: &Regex, c_re: &Regex) -> io::Result<()> 
     }
 
     if !seq_acc.is_empty() {
-        find_pg(&seq_acc, g_re, &header, "+");
-        find_pg(&seq_acc, c_re, &header, "-");
+        emit(&seq_acc, &header, pats)
     }
 
     Ok(())
 }
 
-fn find_pg(seq: &str, re: &Regex, header: &str, strand: &str) {
+fn emit(seq: &str, header: &str, pats: &Patterns) {
     let chrom = header
-        .trim_start_matches(|c| c == '@' || c == '>')
+        .trim_start_matches(['@', '>'])
         .split_whitespace()
         .next()
-        .unwrap_or("unknown");
+        .unwrap_or("Unknown sequence header");
 
-    for mat in re.find_iter(seq) {
-        let start = mat.start();
-        let end = mat.end();
-        let length = end - start;
+    // print the BED file to stdout
+    for m in find_in_record(chrom, seq, pats) {
         println!(
-            "{}\t{}\t{}\t{}\t{}\t{}",
-            chrom, start, end, "G4", length, strand
+            "{}\t{}\t{}\tG4\t{}\t{}",
+            m.seq_id,
+            m.start,
+            m.end,
+            m.span(),
+            m.strand
         );
     }
 }

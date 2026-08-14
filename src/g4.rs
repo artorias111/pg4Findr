@@ -5,23 +5,24 @@ use std::fmt;
 /// A G-rich match in the forward sequence is a plus-strand G4
 /// A C-rich match means the reverse-complement is G-ruch, so
 /// the G-4 is on the minus strand
-#[derive(Debug, Clone, Copy, PArtialEq, Eq)]
+#[derive(Default, Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Strand {
+    #[default]
     Plus,
     Minus,
 }
 
-impl format::Display for Strand {
+impl fmt::Display for Strand {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Strand::Plus => f.write_str('+'),
-            Strand::Minus => f.write_str('-'),
+            Strand::Plus => f.write_str("+"),
+            Strand::Minus => f.write_str("-"),
         }
     }
 }
 
 /// A single potential G-quadruplex located within one record.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PG4Match {
     pub seq_id: String,
     pub start: usize,
@@ -51,8 +52,10 @@ impl Default for Patterns {
 impl Patterns {
     pub fn new() -> Self {
         Self {
-            g_pat: Regex::new().expect("Hardcoded G-strand pattern is valid"),
-            c_pat: Regex::new().expect("Hardcoded C-strand pattern is valid"),
+            g_pat: Regex::new(r"(?i)G{3,}[ATCGN]{1,7}G{3,}[ATCGN]{1,7}G{3,}[ATCGN]{1,7}G{3,}")
+                .expect("Hardcoded G-strand pattern is valid"),
+            c_pat: Regex::new(r"(?i)C{3,}[ATCGN]{1,7}C{3,}[ATCGN]{1,7}C{3,}[ATCGN]{1,7}C{3,}")
+                .expect("Hardcoded C-strand pattern is valid"),
         }
     }
 }
@@ -60,7 +63,6 @@ impl Patterns {
 /// Find every putative G4 in one record sequence.
 ///
 /// Plus-strand hits are returned before minus-strand hits.
-
 pub fn find_in_record(id: &str, seq: &str, pats: &Patterns) -> Vec<PG4Match> {
     let mut hits = Vec::new();
     collect(&mut hits, id, seq, &pats.g_pat, Strand::Plus);
@@ -75,7 +77,7 @@ fn collect(out: &mut Vec<PG4Match>, id: &str, seq: &str, re: &Regex, strand: Str
             seq_id: id.to_string(),
             start: m.start(),
             end: m.end(),
-            strand: strand,
+            strand,
         });
     }
 }
@@ -95,18 +97,18 @@ mod tests {
                 seq_id: "test_read".to_string(),
                 start: 5,
                 end: 26,
-                Strand: Strand::Plus,
+                strand: Strand::Plus,
             }]
         );
     }
 
     #[test]
     fn c_rich_sequence_is_reported_on_minus_strand() {
-        let pats = Pattern::new();
+        let pats = Patterns::new();
         let seq = "CCCAACCCAACCCAACCC";
 
         let hits = find_in_record("r", seq, &pats);
 
-        assert_eq!(hits[0].strand, Strand)
+        assert_eq!(hits[0].strand, Strand::Minus)
     }
 }
