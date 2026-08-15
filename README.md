@@ -1,4 +1,6 @@
-# pg4Findr
+# pg4findr
+![CI](https://github.com/artorias111/pg4findr/actions/workflows/ci.yml/badge.svg)
+
 
 Find G-quadruplex motifs in sequencing reads/genome assemblies. Input is expected to be a fastq (optionally can be gzipped) or a fasta (if you're working with a genome assembly). Output is a bed file with the columns sequence_id, start, end, G4, length, strand. Default output is to stdout. See https://github.com/samtools/hts-specs/blob/master/BEDv1.pdf for more information on the BED file format.
 
