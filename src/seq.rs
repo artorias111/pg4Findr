@@ -6,6 +6,7 @@ use std::io::{self, BufRead, BufReader};
 use std::mem;
 use std::path::PathBuf;
 
+#[allow(dead_code)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum FileFormat {
     Fastq,
@@ -21,6 +22,7 @@ impl fmt::Display for FileFormat {
     }
 }
 
+#[allow(dead_code)]
 #[derive(Default, Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Compression {
     Gzipped,
@@ -37,6 +39,7 @@ impl fmt::Display for Compression {
     }
 }
 
+#[allow(dead_code)] // unused, it'd be nice if I can use it, else I'll clean it up
 pub struct Filestate {
     file: PathBuf,
     format: FileFormat,
