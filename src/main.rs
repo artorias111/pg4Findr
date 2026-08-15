@@ -1,6 +1,7 @@
 // main.rs
 mod cli;
 mod g4;
+mod seq;
 
 use clap::Parser;
 use flate2::read::MultiGzDecoder;
