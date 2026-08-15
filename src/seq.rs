@@ -1,8 +1,8 @@
 // seq.rs
-// use flate2::read::MultiGzDecoder;
+use flate2::read::MultiGzDecoder;
 use std::fmt;
-// use std::fs::File;
-use std::io::{self, BufRead};
+use std::fs::File;
+use std::io::{self, BufRead, BufReader};
 use std::mem;
 use std::path::PathBuf;
 
@@ -89,8 +89,7 @@ impl<R: BufRead> Iterator for Records<R> {
                                 .header
                                 .trim_start_matches(['@', '>'])
                                 .split_whitespace()
-                                .next()
-                                .unwrap_or("Invalid header")
+                                .next()?
                                 .to_string(),
                             seq: mem::take(&mut self.seq),
                         }));
@@ -114,8 +113,7 @@ impl<R: BufRead> Iterator for Records<R> {
                         id: prev_header
                             .trim_start_matches('>')
                             .split_whitespace()
-                            .next()
-                            .unwrap_or("Invalid fasta header detected in the file")
+                            .next()?
                             .to_string(),
                         seq: sequence,
                     }));
@@ -133,8 +131,7 @@ impl<R: BufRead> Iterator for Records<R> {
                                 .header
                                 .trim_start_matches('@')
                                 .split_whitespace()
-                                .next()
-                                .unwrap_or("Invalid fastq header detected in the file")
+                                .next()?
                                 .to_string(),
                             seq: line,
                         }));
@@ -150,6 +147,23 @@ impl<R: BufRead> Iterator for Records<R> {
     }
 }
 
+// file I/O
+
+pub fn from_path(path: &str) -> io::Result<Records<Box<dyn BufRead>>> {
+    let mut gzipped = false;
+    if path.ends_with(".gz") {
+        gzipped = true;
+    };
+    let file = File::open(path)?;
+
+    let reader: Box<dyn BufRead> = match gzipped {
+        true => Box::new(BufReader::new(MultiGzDecoder::new(file))),
+        false => Box::new(BufReader::new(file)),
+    };
+    Ok(Records::new(reader))
+}
+
+// Tests
 #[cfg(test)]
 mod tests {
     use super::*;
