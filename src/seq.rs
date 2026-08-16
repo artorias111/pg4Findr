@@ -105,7 +105,7 @@ impl<R: BufRead> Iterator for Records<R> {
                 continue;
             }
 
-            if line.starts_with(">") {
+            if line.starts_with(">") && self.fq_step == 0 {
                 self.is_fastq = false;
 
                 let prev_header = mem::replace(&mut self.header, line);
