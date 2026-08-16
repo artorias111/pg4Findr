@@ -212,4 +212,21 @@ mod tests {
         assert_eq!(recs.len(), 1);
         assert_eq!(recs[0].seq, "GGG");
     }
+
+    #[test]
+    fn fastq_quality_line_starting_with_gt_is_not_a_header() {
+        let recs = parse("@r1\nGGG\n+\n>>>\n@r2\nCCC\n+\nIII\n");
+        assert_eq!(recs.len(), 2);
+        assert_eq!(recs[0].id, "r1");
+        assert_eq!(recs[0].seq, "GGG");
+        assert_eq!(recs[1].id, "r2");
+        assert_eq!(recs[1].seq, "CCC");
+    }
+
+    #[test]
+    fn fastq_quality_line_starting_with_at_is_not_a_header() {
+        let recs = parse("@r1\nGGG\n+\n@@@\n@r2\nCCC\n+\nIII\n");
+        assert_eq!(recs.len(), 2);
+        assert_eq!(recs[1].id, "r2");
+    }
 }
